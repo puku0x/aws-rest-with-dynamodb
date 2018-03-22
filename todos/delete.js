@@ -1,38 +1,20 @@
 'use strict';
 
-const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
-
+const AWS = require('aws-sdk');
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
-module.exports.delete = (event, context, callback) => {
+module.exports = (req, res) => {
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Key: {
-      id: event.pathParameters.id,
+      id: req.params.id,
     },
   };
-
-  // delete the todo from the database
   dynamoDb.delete(params, (error) => {
-    // handle potential errors
     if (error) {
-      console.error(error);
-      callback(null, {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t remove the todo item.',
-      });
-      return;
+      console.log(error);
+      res.status(400).json({ error: 'Could not delete todos' });
     }
-
-    // create a response
-    const response = {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin" : "*" // Required for CORS support to work
-      },
-      body: JSON.stringify({}),
-    };
-    callback(null, response);
+    res.json({});
   });
-};
+}

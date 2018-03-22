@@ -1,34 +1,17 @@
 'use strict';
 
-const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
-
+const AWS = require('aws-sdk');
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
-const params = {
-  TableName: process.env.DYNAMODB_TABLE,
-};
 
-module.exports.list = (event, context, callback) => {
-  // fetch all todos from the database
+module.exports = (req, res) => {
+  const params = {
+    TableName: process.env.DYNAMODB_TABLE,
+  };
   dynamoDb.scan(params, (error, result) => {
-    // handle potential errors
     if (error) {
-      console.error(error);
-      callback(null, {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t fetch the todos.',
-      });
-      return;
+      console.log(error);
+      res.status(400).json({ error: 'Could not fetch todos' });
     }
-
-    // create a response
-    const response = {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin" : "*" // Required for CORS support to work
-      },
-      body: JSON.stringify(result.Items),
-    };
-    callback(null, response);
+    res.json(result.Items);
   });
-};
+}

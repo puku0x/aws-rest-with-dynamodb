@@ -1,38 +1,20 @@
 'use strict';
 
-const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
-
+const AWS = require('aws-sdk');
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
-module.exports.get = (event, context, callback) => {
+module.exports = (req, res) => {
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Key: {
       id: event.pathParameters.id,
     },
   };
-
-  // fetch todo from the database
-  dynamoDb.get(params, (error, result) => {
-    // handle potential errors
+  dynamoDb.update(params, (error, result) => {
     if (error) {
-      console.error(error);
-      callback(null, {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t fetch the todo item.',
-      });
-      return;
+      console.log(error);
+      res.status(400).json({ error: 'Could not get todo' });
     }
-
-    // create a response
-    const response = {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin" : "*" // Required for CORS support to work
-      },
-      body: JSON.stringify(result.Item),
-    };
-    callback(null, response);
+    res.json(result.Item);
   });
-};
+}

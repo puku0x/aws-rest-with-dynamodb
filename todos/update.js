@@ -1,28 +1,22 @@
 'use strict';
 
-const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
-
+const AWS = require('aws-sdk');
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
-module.exports.update = (event, context, callback) => {
+module.exports = (req, res) => {
   const timestamp = new Date().getTime();
-  const data = JSON.parse(event.body);
+  const data = req.body;
 
   // validation
   if (typeof data.text !== 'string' || typeof data.checked !== 'boolean') {
-    console.error('Validation Failed');
-    callback(null, {
-      statusCode: 400,
-      headers: { 'Content-Type': 'text/plain' },
-      body: 'Couldn\'t update the todo item.',
-    });
-    return;
+    console.error('Validation failed');
+    res.status(400).json({ error: 'Could not update todo' });
   }
 
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Key: {
-      id: event.pathParameters.id,
+      id: req.params.id,
     },
     ExpressionAttributeNames: {
       '#todo_text': 'text',
@@ -35,28 +29,11 @@ module.exports.update = (event, context, callback) => {
     UpdateExpression: 'SET #todo_text = :text, checked = :checked, updatedAt = :updatedAt',
     ReturnValues: 'ALL_NEW',
   };
-
-  // update the todo in the database
   dynamoDb.update(params, (error, result) => {
-    // handle potential errors
     if (error) {
-      console.error(error);
-      callback(null, {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t fetch the todo item.',
-      });
-      return;
+      console.log(error);
+      res.status(400).json({ error: 'Could not delete todo' });
     }
-
-    // create a response
-    const response = {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin" : "*" // Required for CORS support to work
-      },
-      body: JSON.stringify(result.Attributes),
-    };
-    callback(null, response);
+    res.json(result.Attributes);
   });
-};
+}
